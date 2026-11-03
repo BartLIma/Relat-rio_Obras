@@ -108,17 +108,24 @@ if not df_filtrado.empty:
     if col_lat in df_filtrado.columns and col_lon in df_filtrado.columns:
         st.subheader("📍 Geolocalização das Obras (GPS)")
         
-        dados_mapa = df_filtrado.dropna(subset=[col_lat, col_lon])
+        # Cria uma cópia para tratar os dados sem afetar a tabela original
+        dados_mapa = df_filtrado.dropna(subset=[col_lat, col_lon]).copy()
+        
+        # CORREÇÃO DE SEGURANÇA: Substitui vírgulas por pontos caso as coordenadas venham como texto do Excel
+        dados_mapa[col_lat] = dados_mapa[col_lat].astype(str).str.replace(",", ".", regex=False)
+        dados_mapa[col_lon] = dados_mapa[col_lon].astype(str).str.replace(",", ".", regex=False)
+        
+        # Converte para número (float), transformando o que for inválido em NaN
         dados_mapa[col_lat] = pd.to_numeric(dados_mapa[col_lat], errors='coerce')
         dados_mapa[col_lon] = pd.to_numeric(dados_mapa[col_lon], errors='coerce')
+        
+        # Remove qualquer linha que tenha ficado inválida após a conversão
         dados_mapa = dados_mapa.dropna(subset=[col_lat, col_lon])
         
         if not dados_mapa.empty:
             df_mapa_streamlit = dados_mapa[[col_lat, col_lon]].rename(columns={col_lat: "lat", col_lon: "lon"})
             st.map(df_mapa_streamlit)
         else:
-            st.warning("As obras encontradas não possuem coordenadas numéricas válidas para exibir no mapa.")
+            st.warning("A proposta selecionada não possui coordenadas de GPS válidas preenchidas na planilha.")
     else:
         st.error("As colunas 'Latitude' e 'Longitude' não foram encontradas no arquivo CSV.")
-else:
-    st.warning("Nenhuma obra encontrada para os critérios de busca selecionados.")
