@@ -50,7 +50,7 @@ st.sidebar.header("Filtros de Pesquisa")
 
 # Monta a lista de municípios removendo valores nulos para evitar falhas de ordenação
 lista_municipios = sorted(df_obras["Município"].dropna().unique()) if "Município" in df_obras.columns else []
-municipio_selecionado = st.sidebar.selectbox("Selecione o Executante / Município:", ["Todos"] + lista_municipios)
+municipio_selecionado = st.sidebar.selectbox("Selecione o Município:", ["Todos"] + lista_municipios)
 
 # Campo de busca por texto direto para número da Proposta
 proposta_digitada = st.sidebar.text_input("Digite o Número da Proposta:").strip()
@@ -62,12 +62,14 @@ df_filtrado = df_obras.copy()
 if municipio_selecionado != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Município"] == municipio_selecionado]
 
-# CORREÇÃO DA LINHA 66: Variável ajustada corretamente com 'o' (proposta_digitada)
+# Aplica filtro de proposta se digitado
 if proposta_digitada:
     df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == proposta_digitada]
 
-    # 5. EXIBIÇÃO DE RESULTADOS E PAINEIS VISUAIS
-    # Tratamento específico para converter os valores financeiros de texto para número real (float)
+# 5. EXIBIÇÃO DE RESULTADOS E PAINEIS VISUAIS
+if not df_filtrado.empty:
+    
+    # TRATAMENTO FINANCEIRO CRÍTICO: Converte os valores em formato de texto PT-BR para número real (float)
     for col_financeira in ["Valor repassado", "Valor total pago"]:
         if col_financeira in df_filtrado.columns:
             df_filtrado[col_financeira] = (
@@ -95,26 +97,28 @@ if proposta_digitada:
     st.subheader("📋 Informações Detalhadas das Obras")
     st.dataframe(df_filtrado)
     
-    # 6. GERAÇÃO DE TEXTO PARA CÓPIA
+    # 6. GERAÇÃO DE TEXTO PARA CÓPIA (Abordagem direta por string contra erros de tipo de índice em Campina Grande)
     st.subheader("📝 Gerador de Resumo para Cópia")
     st.markdown("Selecione uma obra abaixo e use o botão flutuante **'Copy'** no canto superior direito da caixa preta.")
     
+    # Reseta o índice temporário para isolar o filtro atual de forma limpa
     df_selecao = df_filtrado.reset_index(drop=True)
     df_selecao["Rotulo_Selecao"] = df_selecao["Número da proposta"].astype(str) + " - " + df_selecao["Estabelecimento"].astype(str)
     
+    # Passamos a lista de textos diretamente como opções, evitando falhas com indexação complexa do Pandas
     texto_selecionado = st.selectbox(
         "Escolha a obra específica para copiar os dados:", 
         options=df_selecao["Rotulo_Selecao"].tolist()
     )
     
-    # Recupera a linha exata selecionada
+    # Localiza a linha correspondente de forma segura usando o texto selecionado e converte para série (iloc[0])
     linha = df_selecao[df_selecao["Rotulo_Selecao"] == texto_selecionado].iloc[0]
     
-    # Formata os valores individuais da linha para o texto de cópia
+    # Formata de volta os valores numéricos limpos individuais da linha para o texto de cópia
     val_repassado = f"R$ {linha.get('Valor repassado', 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     val_pago = f"R$ {linha.get('Valor total pago', 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    # Montagem estruturada da mensagem utilizando os valores convertidos
+    # Montagem estruturada da mensagem utilizando as colunas validadas da imagem
     texto_resumo = f"""*RELATÓRIO DE OBRA*
 ----------------------------------------
 *Proposta:* {linha.get('Número da proposta', 'Não informado')}
@@ -133,6 +137,7 @@ if proposta_digitada:
 - Latitude: {linha.get('Latitude', 'Não cadastrada')}
 - Longitude: {linha.get('Longitude', 'Não cadastrada')}"""
 
+    # Exibe o painel estável de cópia com um clique
     st.code(texto_resumo, language="text")
 
     # 7. RENDERIZAÇÃO INTELIGENTE DO MAPA (Conversão de coordenadas padrão PT-BR)
