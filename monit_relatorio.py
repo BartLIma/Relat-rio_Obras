@@ -45,7 +45,7 @@ if municipio_selecionado != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Município"] == municipio_selecionado]
 
 if proposta_digitada:
-    df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == propuesta_digitada]
+    df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == proposta_digitada]
 
 # 5. EXIBIÇÃO DE RESULTADOS E MÉTRICAS
 if not df_filtrado.empty:
@@ -67,9 +67,9 @@ if not df_filtrado.empty:
     st.subheader("📋 Informações Detalhadas das Obras")
     st.dataframe(df_filtrado)
     
-    # 6. GERAÇÃO DE MENSAGEM PARA COPIAR (Campos atualizados com base na imagem)
+    # 6. GERAÇÃO DE MENSAGEM PARA COPIAR (Substituído st.copy_to_clipboard por st.code)
     st.subheader("📝 Gerador de Resumo para Cópia")
-    st.markdown("Selecione uma obra abaixo para gerar um texto de resumo formatado pronto para ser copiado.")
+    st.markdown("Selecione uma obra abaixo e use o botão de cópia automática no canto superior direito do bloco de texto.")
     
     # Caixa de seleção mapeada com 'Estabelecimento' para identificação rápida
     opcoes_obras = df_filtrado["Número da proposta"].astype(str) + " - " + df_filtrado["Estabelecimento"].astype(str)
@@ -97,35 +97,36 @@ if not df_filtrado.empty:
 - Latitude: {linha.get('Latitude', 'Não cadastrada')}
 - Longitude: {linha.get('Longitude', 'Não cadastrada')}"""
 
-    # Área de visualização e botão de copiar oficial do Streamlit
-    st.text_area("Texto formatado:", value=texto_resumo, height=280)
-    st.copy_to_clipboard(texto_resumo, label="Copiar Texto para a Área de Transferência", icon="📋")
+    # O componente st.code adiciona automaticamente o botão flutuante "Copy" compatível com a nuvem
+    st.code(texto_resumo, language="text")
 
-    # 7. MONTAGEM DO MAPA VIA GPS (Usando colunas nativas)
+    # 7. MONTAGEM DO MAPA VIA GPS (Com tratamento de texto e correção para busca por proposta individual)
     col_lat = "Latitude"
     col_lon = "Longitude"
     
     if col_lat in df_filtrado.columns and col_lon in df_filtrado.columns:
         st.subheader("📍 Geolocalização das Obras (GPS)")
         
-        # Cria uma cópia para tratar os dados sem afetar a tabela original
+        # Cria cópia para tratar strings sem quebrar a tabela original
         dados_mapa = df_filtrado.dropna(subset=[col_lat, col_lon]).copy()
         
-        # CORREÇÃO DE SEGURANÇA: Substitui vírgulas por pontos caso as coordenadas venham como texto do Excel
-        dados_mapa[col_lat] = dados_mapa[col_lat].astype(str).str.replace(",", ".", regex=False)
-        dados_mapa[col_lon] = dados_mapa[col_lon].astype(str).str.replace(",", ".", regex=False)
+        # Converte para texto e limpa vírgulas pontuais vindas do Excel brasileiro
+        dados_mapa[col_lat] = dados_mapa[col_lat].astype(str).str.replace(",", ".", regex=False).str.strip()
+        dados_mapa[col_lon] = dados_mapa[col_lon].astype(str).str.replace(",", ".", regex=False).str.strip()
         
-        # Converte para número (float), transformando o que for inválido em NaN
+        # Força conversão para float numérico puro
         dados_mapa[col_lat] = pd.to_numeric(dados_mapa[col_lat], errors='coerce')
         dados_mapa[col_lon] = pd.to_numeric(dados_mapa[col_lon], errors='coerce')
         
-        # Remove qualquer linha que tenha ficado inválida após a conversão
+        # Retira linhas que falharam na conversão do GPS
         dados_mapa = dados_mapa.dropna(subset=[col_lat, col_lon])
         
         if not dados_mapa.empty:
             df_mapa_streamlit = dados_mapa[[col_lat, col_lon]].rename(columns={col_lat: "lat", col_lon: "lon"})
             st.map(df_mapa_streamlit)
         else:
-            st.warning("A proposta selecionada não possui coordenadas de GPS válidas preenchidas na planilha.")
+            st.warning("O registro selecionado não possui coordenadas numéricas de GPS válidas na planilha para exibição do mapa.")
     else:
         st.error("As colunas 'Latitude' e 'Longitude' não foram encontradas no arquivo CSV.")
+else:
+    st.warning("Nenhuma obra encontrada para os critérios de busca selecionados.")
