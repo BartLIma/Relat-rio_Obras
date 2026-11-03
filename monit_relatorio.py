@@ -50,7 +50,7 @@ st.sidebar.header("Filtros de Pesquisa")
 
 # Monta a lista de municípios removendo valores nulos para evitar falhas de ordenação
 lista_municipios = sorted(df_obras["Município"].dropna().unique()) if "Município" in df_obras.columns else []
-municipio_selecionado = st.sidebar.selectbox("Selecione o Município:", ["Todos"] + lista_municipios)
+municipio_selecionado = st.sidebar.selectbox("Selecione o Executante / Município:", ["Todos"] + lista_municipios)
 
 # Campo de busca por texto direto para número da Proposta
 proposta_digitada = st.sidebar.text_input("Digite o Número da Proposta:").strip()
@@ -62,8 +62,8 @@ df_filtrado = df_obras.copy()
 if municipio_selecionado != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Município"] == municipio_selecionado]
 
-# Aplica filtro de proposta se digitado
-if propuesta_digitada:
+# CORREÇÃO DA LINHA 66: Variável ajustada corretamente com 'o' (proposta_digitada)
+if proposta_digitada:
     df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == proposta_digitada]
 
 # 5. EXIBIÇÃO DE RESULTADOS E PAINEIS VISUAIS
@@ -90,13 +90,13 @@ if not df_filtrado.empty:
     st.subheader("📝 Gerador de Resumo para Cópia")
     st.markdown("Selecione uma obra abaixo e use o botão flutuante **'Copy'** no canto superior direito da caixa preta.")
     
-    # CORREÇÃO CRÍTICA: Reseta o índice temporário para evitar erros de mapeamento no selectbox
+    # Reseta o índice temporário para evitar erros de mapeamento no selectbox
     df_selecao = df_filtrado.reset_index(drop=True)
     
     # Cria rótulo combinando proposta e estabelecimento para facilitar a escolha do usuário
     opcoes_obras = df_selecao["Número da proposta"].astype(str) + " - " + df_selecao["Estabelecimento"].astype(str)
     
-    # Agora passamos os índices limpos (0, 1, 2...) garantindo que o format_func nunca falhe
+    # Passamos os índices limpos (0, 1, 2...) garantindo que o format_func nunca falhe
     obra_selecionada_index = st.selectbox(
         "Escolha a obra específica para copiar os dados:", 
         options=list(opcoes_obras.index), 
