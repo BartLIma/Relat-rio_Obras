@@ -66,46 +66,55 @@ if municipio_selecionado != "Todos":
 if proposta_digitada:
     df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == proposta_digitada]
 
-# 5. EXIBIÇÃO DE RESULTADOS E PAINEIS VISUAIS
-if not df_filtrado.empty:
-    
+    # 5. EXIBIÇÃO DE RESULTADOS E PAINEIS VISUAIS
+    # Tratamento específico para converter os valores financeiros de texto para número real (float)
+    for col_financeira in ["Valor repassado", "Valor total pago"]:
+        if col_financeira in df_filtrado.columns:
+            df_filtrado[col_financeira] = (
+                df_filtrado[col_financeira]
+                .astype(str)
+                .str.replace("R$", "", regex=False)
+                .str.replace(".", "", regex=False)
+                .str.replace(",", ".", regex=False)
+                .str.strip()
+            )
+            df_filtrado[col_financeira] = pd.to_numeric(df_filtrado[col_financeira], errors="coerce").fillna(0)
+
     # Bloco Superior de Métricas Consolidadas
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric(label="Total de Obras Selecionadas", value=len(df_filtrado))
     with col2:
-        if "Valor repassado" in df_filtrado.columns:
-            total_repassado = pd.to_numeric(df_filtrado["Valor repassado"], errors='coerce').sum()
-            st.metric(label="Total Repassado", value=f"R$ {total_repassado:,.2f}".replace(",", "v").replace(".", ",").replace("v", "."))
+        total_repassado = df_filtrado["Valor repassado"].sum() if "Valor repassado" in df_filtrado.columns else 0
+        st.metric(label="Total Repassado", value=f"R$ {total_repassado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
     with col3:
-        if "Valor total pago" in df_filtrado.columns:
-            total_pago = pd.to_numeric(df_filtrado["Valor total pago"], errors='coerce').sum()
-            st.metric(label="Total Pago", value=f"R$ {total_pago:,.2f}".replace(",", "v").replace(".", ",").replace("v", "."))
+        total_pago = df_filtrado["Valor total pago"].sum() if "Valor total pago" in df_filtrado.columns else 0
+        st.metric(label="Total Pago", value=f"R$ {total_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
     # Tabela detalhada tratada para renderização estável
     st.subheader("📋 Informações Detalhadas das Obras")
     st.dataframe(df_filtrado)
     
-        # 6. GERAÇÃO DE TEXTO PARA CÓPIA (Abordagem direta por string contra erros de tipo de índice)
+    # 6. GERAÇÃO DE TEXTO PARA CÓPIA
     st.subheader("📝 Gerador de Resumo para Cópia")
     st.markdown("Selecione uma obra abaixo e use o botão flutuante **'Copy'** no canto superior direito da caixa preta.")
     
-    # Reseta o índice temporário para isolar o filtro atual de forma limpa
     df_selecao = df_filtrado.reset_index(drop=True)
-    
-    # Cria uma coluna temporária no DataFrame com o texto formatado para exibição
     df_selecao["Rotulo_Selecao"] = df_selecao["Número da proposta"].astype(str) + " - " + df_selecao["Estabelecimento"].astype(str)
     
-    # Passamos a lista de textos diretamente como opções. O Streamlit gerencia strings perfeitamente na tela.
     texto_selecionado = st.selectbox(
         "Escolha a obra específica para copiar os dados:", 
         options=df_selecao["Rotulo_Selecao"].tolist()
     )
     
-    # Localiza a linha correspondente de forma segura usando o texto selecionado
+    # Recupera a linha exata selecionada
     linha = df_selecao[df_selecao["Rotulo_Selecao"] == texto_selecionado].iloc[0]
     
-    # Montagem estruturada da mensagem utilizando as colunas validadas da imagem
+    # Formata os valores individuais da linha para o texto de cópia
+    val_repassado = f"R$ {linha.get('Valor repassado', 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    val_pago = f"R$ {linha.get('Valor total pago', 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    # Montagem estruturada da mensagem utilizando os valores convertidos
     texto_resumo = f"""*RELATÓRIO DE OBRA*
 ----------------------------------------
 *Proposta:* {linha.get('Número da proposta', 'Não informado')}
@@ -117,14 +126,13 @@ if not df_filtrado.empty:
 *Situação da Obra:* {linha.get('Situação da obra', 'Não informado')}
 ----------------------------------------
 *Valores Financeiros:*
-- Valor Repassado: R$ {linha.get('Valor repassado', 0)}
-- Valor Total Pago: R$ {linha.get('Valor total pago', 0)}
+- Valor Repassado: {val_repassado}
+- Valor Total Pago: {val_pago}
 ----------------------------------------
 *Coordenadas GPS:*
 - Latitude: {linha.get('Latitude', 'Não cadastrada')}
 - Longitude: {linha.get('Longitude', 'Não cadastrada')}"""
 
-    # Exibe o painel estável de cópia com um clique
     st.code(texto_resumo, language="text")
 
     # 7. RENDERIZAÇÃO INTELIGENTE DO MAPA (Conversão de coordenadas padrão PT-BR)
