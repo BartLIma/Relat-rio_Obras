@@ -63,7 +63,7 @@ if municipio_selecionado != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Município"] == municipio_selecionado]
 
 # Aplica filtro de proposta se digitado
-if proposta_digitada:
+if propuesta_digitada:
     df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == proposta_digitada]
 
 # 5. EXIBIÇÃO DE RESULTADOS E PAINEIS VISUAIS
@@ -90,12 +90,21 @@ if not df_filtrado.empty:
     st.subheader("📝 Gerador de Resumo para Cópia")
     st.markdown("Selecione uma obra abaixo e use o botão flutuante **'Copy'** no canto superior direito da caixa preta.")
     
-    # Cria rótulo combinando proposta e estabelecimento para facilitar a escolha do usuário
-    opcoes_obras = df_filtrado["Número da proposta"].astype(str) + " - " + df_filtrado["Estabelecimento"].astype(str)
-    obra_selecionada_index = st.selectbox("Escolha a obra específica para copiar os dados:", opcoes_obras.index, format_func=lambda x: opcoes_obras[x])
+    # CORREÇÃO CRÍTICA: Reseta o índice temporário para evitar erros de mapeamento no selectbox
+    df_selecao = df_filtrado.reset_index(drop=True)
     
-    # Extrai a linha exata selecionada
-    linha = df_filtrado.loc[obra_selecionada_index]
+    # Cria rótulo combinando proposta e estabelecimento para facilitar a escolha do usuário
+    opcoes_obras = df_selecao["Número da proposta"].astype(str) + " - " + df_selecao["Estabelecimento"].astype(str)
+    
+    # Agora passamos os índices limpos (0, 1, 2...) garantindo que o format_func nunca falhe
+    obra_selecionada_index = st.selectbox(
+        "Escolha a obra específica para copiar os dados:", 
+        options=list(opcoes_obras.index), 
+        format_func=lambda x: opcoes_obras[x]
+    )
+    
+    # Extrai a linha exata selecionada a partir do DataFrame resetado
+    linha = df_selecao.loc[obra_selecionada_index]
     
     # Montagem estruturada da mensagem utilizando as colunas validadas da imagem
     texto_resumo = f"""*RELATÓRIO DE OBRA*
