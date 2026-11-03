@@ -7,7 +7,7 @@ st.title("🏗️ Monitoramento - Relatório Geral de Obras")
 
 @st.cache_data
 def carregar_dados():
-    # CORREÇÃO: Força colunas problemáticas a serem lidas estritamente como TEXTO (string)
+    # Força as colunas que possuem números longos a serem lidas puramente como texto
     tipos_colunas = {
         "IBGE": str,
         "CNPJ": str,
@@ -22,11 +22,11 @@ def carregar_dados():
     # Remove espaços invisíveis do início e fim de todos os cabeçalhos
     df.columns = df.columns.str.strip()
     
-    # Limpa valores nulos ou esquisitos transformando códigos em strings limpas
+    # Correção da limpeza: Garante que nulos não apareçam como texto escrito 'nan'
     if "IBGE" in df.columns:
-        df["IBGE"] = df["IBGE"].astype(str).str.split('.').str[0].str.replace('nan', '')
+        df["IBGE"] = df["IBGE"].astype(str).str.replace('nan', '', case=False).str.strip()
     if "CNPJ" in df.columns:
-        df["CNPJ"] = df["CNPJ"].astype(str).str.split('.').str[0].str.replace('nan', '')
+        df["CNPJ"] = df["CNPJ"].astype(str).str.replace('nan', '', case=False).str.strip()
     
     # Padroniza as colunas de busca para evitar erros com espaços ou caixa alta/baixa
     if "Município" in df.columns:
@@ -35,6 +35,7 @@ def carregar_dados():
         df["Prop_Busca"] = df["Número da proposta"].astype(str).str.strip()
         
     return df
+
 
 # 3. PAINEL DE FILTROS NA BARRA LATERAL
 st.sidebar.header("Filtros de Pesquisa")
