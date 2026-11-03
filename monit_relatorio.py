@@ -5,14 +5,28 @@ import pandas as pd
 st.set_page_config(page_title="Relatório Geral de Obras", layout="wide")
 st.title("🏗️ Monitoramento - Relatório Geral de Obras")
 
-# 2. CARREGAMENTO DOS DADOS
 @st.cache_data
 def carregar_dados():
-    # Carrega a planilha usando o ponto e vírgula como separador
-    df = pd.read_csv("relatorio_obras.csv", encoding="utf-8", sep=";")
+    # CORREÇÃO: Força colunas problemáticas a serem lidas estritamente como TEXTO (string)
+    tipos_colunas = {
+        "IBGE": str,
+        "CNPJ": str,
+        "Número da proposta": str,
+        "Ano do cadastro": str,
+        "Ano da proposta": str
+    }
+    
+    # Carrega a planilha mapeando os tipos e usando ponto e vírgula
+    df = pd.read_csv("relatorio_obras.csv", encoding="utf-8", sep=";", dtype=tipos_colunas)
     
     # Remove espaços invisíveis do início e fim de todos os cabeçalhos
     df.columns = df.columns.str.strip()
+    
+    # Limpa valores nulos ou esquisitos transformando códigos em strings limpas
+    if "IBGE" in df.columns:
+        df["IBGE"] = df["IBGE"].astype(str).str.split('.').str[0].str.replace('nan', '')
+    if "CNPJ" in df.columns:
+        df["CNPJ"] = df["CNPJ"].astype(str).str.split('.').str[0].str.replace('nan', '')
     
     # Padroniza as colunas de busca para evitar erros com espaços ou caixa alta/baixa
     if "Município" in df.columns:
@@ -21,12 +35,6 @@ def carregar_dados():
         df["Prop_Busca"] = df["Número da proposta"].astype(str).str.strip()
         
     return df
-
-try:
-    df_obras = carregar_dados()
-except Exception as e:
-    st.error(f"Erro ao carregar o arquivo 'relatorio_obras.csv': {e}")
-    st.stop()
 
 # 3. PAINEL DE FILTROS NA BARRA LATERAL
 st.sidebar.header("Filtros de Pesquisa")
