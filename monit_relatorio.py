@@ -8,17 +8,19 @@ st.title("🏗️ Monitoramento - Relatório Geral de Obras")
 # 2. CARREGAMENTO DOS DADOS
 @st.cache_data
 def carregar_dados():
-    # Adicionado o parâmetro sep=";" para evitar conflito com vírgulas de valores e textos
+    # Carrega a planilha usando o ponto e vírgula como separador
     df = pd.read_csv("relatorio_obras.csv", encoding="utf-8", sep=";")
     
-    # Padroniza as colunas de busca para evitar erros com espaços ou letras maiúsculas/minúsculas
+    # Remove espaços invisíveis do início e fim de todos os cabeçalhos
+    df.columns = df.columns.str.strip()
+    
+    # Padroniza as colunas de busca para evitar erros com espaços ou caixa alta/baixa
     if "Município" in df.columns:
         df["Muni_Busca"] = df["Município"].astype(str).str.upper().str.strip()
     if "Número da proposta" in df.columns:
         df["Prop_Busca"] = df["Número da proposta"].astype(str).str.strip()
         
     return df
-
 
 try:
     df_obras = carregar_dados()
@@ -43,7 +45,7 @@ if municipio_selecionado != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Município"] == municipio_selecionado]
 
 if proposta_digitada:
-    df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == proposta_digitada]
+    df_filtrado = df_filtrado[df_filtrado["Prop_Busca"] == propuesta_digitada]
 
 # 5. EXIBIÇÃO DE RESULTADOS E MÉTRICAS
 if not df_filtrado.empty:
@@ -65,22 +67,22 @@ if not df_filtrado.empty:
     st.subheader("📋 Informações Detalhadas das Obras")
     st.dataframe(df_filtrado)
     
-    # 6. GERAÇÃO DE MENSAGEM PARA COPIAR
+    # 6. GERAÇÃO DE MENSAGEM PARA COPIAR (Campos atualizados com base na imagem)
     st.subheader("📝 Gerador de Resumo para Cópia")
     st.markdown("Selecione uma obra abaixo para gerar um texto de resumo formatado pronto para ser copiado.")
     
-    # Caixa de seleção caso o filtro traga mais de uma obra
-    opcoes_obras = df_filtrado["Número da proposta"].astype(str) + " - " + df_filtrado["Nome da unidade"].astype(str)
+    # Caixa de seleção mapeada com 'Estabelecimento' para identificação rápida
+    opcoes_obras = df_filtrado["Número da proposta"].astype(str) + " - " + df_filtrado["Estabelecimento"].astype(str)
     obra_selecionada_index = st.selectbox("Escolha a obra específica para copiar os dados:", opcoes_obras.index, format_func=lambda x: opcoes_obras[x])
     
     # Extrai a linha selecionada para montar o texto
     linha = df_filtrado.loc[obra_selecionada_index]
     
-    # Montagem do texto estruturado
+    # Montagem do texto estruturado utilizando os campos reais da imagem
     texto_resumo = f"""*RELATÓRIO DE OBRA*
 ----------------------------------------
 *Proposta:* {linha.get('Número da proposta', 'Não informado')}
-*Unidade:* {linha.get('Nome da unidade', 'Não informado')}
+*Estabelecimento:* {linha.get('Estabelecimento', 'Não informado')}
 *Município:* {linha.get('Município', 'Não informado')}
 *Programa:* {linha.get('Programa', 'Não informado')}
 *Modalidade:* {linha.get('Modalidade', 'Não informado')}
@@ -116,5 +118,7 @@ if not df_filtrado.empty:
             st.map(df_mapa_streamlit)
         else:
             st.warning("As obras encontradas não possuem coordenadas numéricas válidas para exibir no mapa.")
+    else:
+        st.error("As colunas 'Latitude' e 'Longitude' não foram encontradas no arquivo CSV.")
 else:
     st.warning("Nenhuma obra encontrada para os critérios de busca selecionados.")
