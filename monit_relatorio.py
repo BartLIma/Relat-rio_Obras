@@ -8,7 +8,8 @@ st.title("🏗️ Monitoramento - Relatório Geral de Obras")
 # 2. CARREGAMENTO DOS DADOS
 @st.cache_data
 def carregar_dados():
-    df = pd.read_csv("relatorio_obras.csv", encoding="utf-8")
+    # Adicionado o parâmetro sep=";" para evitar conflito com vírgulas de valores e textos
+    df = pd.read_csv("relatorio_obras.csv", encoding="utf-8", sep=";")
     
     # Padroniza as colunas de busca para evitar erros com espaços ou letras maiúsculas/minúsculas
     if "Município" in df.columns:
@@ -17,6 +18,7 @@ def carregar_dados():
         df["Prop_Busca"] = df["Número da proposta"].astype(str).str.strip()
         
     return df
+
 
 try:
     df_obras = carregar_dados()
