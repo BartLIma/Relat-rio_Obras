@@ -86,25 +86,24 @@ if not df_filtrado.empty:
     st.subheader("📋 Informações Detalhadas das Obras")
     st.dataframe(df_filtrado)
     
-    # 6. GERAÇÃO DE TEXTO PARA CÓPIA (Utiliza st.code para máxima compatibilidade na nuvem)
+        # 6. GERAÇÃO DE TEXTO PARA CÓPIA (Abordagem direta por string contra erros de tipo de índice)
     st.subheader("📝 Gerador de Resumo para Cópia")
     st.markdown("Selecione uma obra abaixo e use o botão flutuante **'Copy'** no canto superior direito da caixa preta.")
     
-    # Reseta o índice temporário para evitar erros de mapeamento no selectbox
+    # Reseta o índice temporário para isolar o filtro atual de forma limpa
     df_selecao = df_filtrado.reset_index(drop=True)
     
-    # Cria rótulo combinando proposta e estabelecimento para facilitar a escolha do usuário
-    opcoes_obras = df_selecao["Número da proposta"].astype(str) + " - " + df_selecao["Estabelecimento"].astype(str)
+    # Cria uma coluna temporária no DataFrame com o texto formatado para exibição
+    df_selecao["Rotulo_Selecao"] = df_selecao["Número da proposta"].astype(str) + " - " + df_selecao["Estabelecimento"].astype(str)
     
-    # Passamos os índices limpos (0, 1, 2...) garantindo que o format_func nunca falhe
-    obra_selecionada_index = st.selectbox(
+    # Passamos a lista de textos diretamente como opções. O Streamlit gerencia strings perfeitamente na tela.
+    texto_selecionado = st.selectbox(
         "Escolha a obra específica para copiar os dados:", 
-        options=list(opcoes_obras.index), 
-        format_func=lambda x: opcoes_obras[x]
+        options=df_selecao["Rotulo_Selecao"].tolist()
     )
     
-    # Extrai a linha exata selecionada a partir do DataFrame resetado
-    linha = df_selecao.loc[obra_selecionada_index]
+    # Localiza a linha correspondente de forma segura usando o texto selecionado
+    linha = df_selecao[df_selecao["Rotulo_Selecao"] == texto_selecionado].iloc[0]
     
     # Montagem estruturada da mensagem utilizando as colunas validadas da imagem
     texto_resumo = f"""*RELATÓRIO DE OBRA*
