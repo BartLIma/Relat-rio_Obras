@@ -3,7 +3,7 @@ import pandas as pd
 
 # 1. CONFIGURAÇÃO DA PÁGINA (Layout padrão expansível em alta resolução)
 st.set_page_config(page_title="Relatório Geral de Obras", layout="wide")
-st.title("🏗️ Monitoramento - Relatório Geral de Obras")
+st.title("🏗️ Relatório Geral de Obras")
 
 # 2. CARREGAMENTO DOS DADOS (Tratamento seguro e blindagem contra Overflow/Tipos)
 @st.cache_data
