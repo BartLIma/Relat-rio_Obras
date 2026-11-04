@@ -171,3 +171,10 @@ if not df_filtrado.empty:
         st.error("As colunas 'Latitude' e 'Longitude' não foram encontradas no arquivo de dados.")
 else:
     st.warning("Nenhuma obra encontrada para os critérios de busca selecionados.")
+    # --- RODAPÉ DISCRETO PADRONIZADO DO HUB ---
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    "<p style='text-align:center; font-size:12px; color:gray; margin-top:20px;'>"
+    "Bartolomeu Lima - Corecon-ES 1541</p>",
+    unsafe_allow_html=True
+)
